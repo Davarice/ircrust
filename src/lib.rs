@@ -9,13 +9,11 @@ use std::str;
 #[pyfunction]
 fn decode(input: &PyBytes) -> PyResult<PyObject> {
     // First, decode the data into something we can work.
-    let line: &str = match str::from_utf8(input.as_bytes()) {
-        Ok(v) => v,
-        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-    };
+    let _raw: &str = str::from_utf8(input.as_bytes())?;
+    let _line: String = String::from_utf8(input.as_bytes().to_vec())?;
 
     // Then, initialize the Dict.
-    let gil = Python::acquire_gil();
+    let gil: GILGuard = Python::acquire_gil();
     let py: Python = gil.python();
     let dict: &PyDict = PyDict::new(py);
 
@@ -23,9 +21,9 @@ fn decode(input: &PyBytes) -> PyResult<PyObject> {
     // TODO: Break apart the String.
 
     // Finally, populate the Dict with all the values.
-    for i in 0..line.len() {
+    for i in 0.._raw.len() {
         // FIXME: Placeholder routine until String breaking is ready.
-        dict.set_item(i, line)?;
+        dict.set_item(i, _raw)?;
     }
 
     Ok(dict.into())
