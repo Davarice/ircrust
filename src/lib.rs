@@ -13,30 +13,23 @@ use subsplit::split_at_first;
 fn decode(input: &PyBytes) -> PyResult<PyObject> {
     // First, decode the data into something we can work.
     let raw_str: &str = str::from_utf8(input.as_bytes())?;
+    let mut message: &str;
 
-    // Then, initialize the Dict.
+    // Then, initialize the Output Structures.
     let gil: GILGuard = Python::acquire_gil();
     let py: Python = gil.python();
     let tags_dict: &PyDict = PyDict::new(py);
-    let tag_str: &str;
-    let msg_str: &str;
+    let mut output: (&str, &str, &str, PyObject);
 
     // Third, break the line down.
     if raw_str.starts_with('@') {
         // The Tags String is the first half of the original message received by IRC. The "regular"
         //  message begins after the first space.
-        // Find the first space.
-        let idx = raw_str.find(' ');
-        if idx == None {
-            // There is no space. The entire line after "@" is nothing but tags. Weird but okay.
-            tag_str = &raw_str[1..];
-        } else {
-            // Found the space. Before it (and after "@") is tags, after is message.
-            tag_str = &raw_str[1..idx.unwrap()];
-            msg_str = &raw_str[idx.unwrap() + 1..];
-        }
+        let [_tag_str, _msg_str] = split_at_first(&raw_str[1..], ' ');
+        message = _msg_str;
+
         // Break the tagstr into a Vector.
-        let tags_str_vec: Vec<&str> = tag_str.split(';').collect();
+        let tags_str_vec: Vec<&str> = _tag_str.split(';').collect();
 
         // Loop through the vector of pair strings, and break each one the rest of the way down. Add
         //  values to the Dict.
@@ -50,12 +43,21 @@ fn decode(input: &PyBytes) -> PyResult<PyObject> {
         }
     } else {
         // There are no tags. This is pure message.
-        msg_str = raw_str
+        message = raw_str;
     }
 
-    // TODO: Split the rest of the message into appropriate positionals.
+    let prefix: &str;
+    let command: &str;
+    let trail: &str;
 
-//    let output: (str, str, str, PyObject) = (hostname, command, text, tags_dict.into());
+    // Now, parse the message itself.
+    // This format is specified in Section 2.3.1 of RFC 1459.
+    if message.starts_with(':') {
+        // This Message has a Prefix. The Prefix is most likely hostname and/or server info.
+        let [_a, _b] = split_at_first(message, ':');
+        prefix = _a;
+        message = _b;
+    }
 
     Ok(tags_dict.into())
 }
