@@ -38,24 +38,30 @@ fn decode(input: &PyBytes) -> PyResult<PyObject> {
         // Loop through the vector of pair strings, and break each one the rest of the way down. Add
         //  values to the Dict.
         for &kvp in tags_str_vec.iter() {
-            let mut key: &str;
-            let mut val: &str;
-            if kvp.contains('=') {
-                // If the key has an `=`, the text to the right is the value.
-                let idx = kvp.find('=').unwrap();
-                key = &kvp[..idx];
-                val = &kvp[idx + 1..];
-            } else {
-                // Otherwise, the value is to be interpreted as empty.
-                key = kvp;
-                val = "";
+            if !kvp.is_empty() {
+                let mut key: &str;
+                let mut val: &str;
+                if kvp.contains('=') {
+                    // If the key has an `=`, the text to the right is the value.
+                    let idx = kvp.find('=').unwrap();
+                    key = &kvp[..idx];
+                    val = &kvp[idx + 1..];
+                } else {
+                    // Otherwise, the value is to be interpreted as empty.
+                    key = kvp;
+                    val = "";
+                }
+                if !key.is_empty() {
+                    tags_dict.set_item(key, val);
+                }
             }
-            tags_dict.set_item(key, val);
         }
     } else {
         // There are no tags. This is pure message.
         msg_str = raw_str
     }
+
+    //! TODO: Split the rest of the message into appropriate positionals.
 
 //    let output: (str, str, str, PyObject) = (hostname, command, text, tags_dict.into());
 
