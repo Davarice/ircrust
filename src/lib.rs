@@ -33,12 +33,12 @@ fn decode(input: &PyBytes) -> PyResult<PyObject> {
         let (tag_str, msg_str) = split_at_first(&raw_str[1..], ' ');
         message = msg_str;
 
-        // Break the tagstr into a Vector.
-        let tags_str_vec: Vec<&str> = tag_str.split(';').collect();
+        // Break the tagstr into a Split Iterator. Spliterator?
+        let tags_str_iter = tag_str.split(';');
 
-        // Loop through the vector of pair strings, and break each one the rest of the way down. Add
-        //  values to the Dict.
-        for &kvp in tags_str_vec.iter() {
+        // Loop through the Spliterator of pair strings, and break each one the rest of the way
+        //  down. Add values to the Dict.
+        for kvp in tags_str_iter {
             if !kvp.is_empty() {
                 let (key, val) = split_at_first(kvp, '=');
                 if !key.is_empty() {
