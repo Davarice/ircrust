@@ -8,7 +8,18 @@ use pyo3::wrap_pyfunction;
 use std::str;
 use subsplit::split_at_first;
 
-/// Split a raw IRCv3 line into a usable Dict.
+/// Split a raw IRCv3 line into usable Python types.
+///
+/// Provided a `bytes` message in IRCv3 format, breaks it down into a Tuple.
+/// Tuple contains:
+///     Prefix - str
+///     Command - str
+///     Arguments - list
+///     Trailing - str
+///     IRCv3 Tags - dict
+///
+/// Input: `bytes`
+/// Return: `Tuple[str, str, List[str], str, dict]`
 #[pyfunction]
 fn decode(input: &PyBytes) -> PyResult<(&str, &str, Vec<&str>, &str, PyObject)> {
     // First, decode the data into something we can work.

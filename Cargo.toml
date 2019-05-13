@@ -1,7 +1,7 @@
 [package]
 name = "IRCrust"
-description = "Very simplistic library to break an IRCv3 message into something usable."
-version = "0.1.0-dev0"
+description = "Very simplistic Python library to break an IRCv3 message into something usable."
+version = "1.0.0"
 authors = ["Davarice <davarice@protonmail.com>"]
 edition = "2018"
 
