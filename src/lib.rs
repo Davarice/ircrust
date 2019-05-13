@@ -10,27 +10,21 @@ use subsplit::split_at_first;
 
 /// Split a raw IRCv3 line into a usable Dict.
 #[pyfunction]
-fn decode(input: &PyBytes) -> PyResult<PyObject> {
+fn decode(input: &PyBytes) -> PyResult<(&str, &str, Vec<&str>, &str, PyObject)> {
     // First, decode the data into something we can work.
     let raw_str: &str = str::from_utf8(input.as_bytes())?;
-
-    // Initialize the variables that will be used during parsing.
-    let mut message: &str;
-    let prefix: &str;
-    let command: &str;
-    let trail: &str;
 
     // Then, initialize the Output Structures.
     let gil: GILGuard = Python::acquire_gil();
     let py: Python = gil.python();
     let tags_dict: &PyDict = PyDict::new(py);
-    let mut output: (&str, &str, &str, PyObject);
+    let mut message: &str;
 
     // Third, break the line down.
     if raw_str.starts_with('@') {
         // The Tags String is the first half of the original message received by IRC. The "regular"
         //  message begins after the first space.
-        let (tag_str, msg_str) = split_at_first(&raw_str[1..], ' ');
+        let (tag_str, msg_str) = split_at_first(&raw_str[1..], " ");
         message = msg_str;
 
         // Break the tagstr into a Split Iterator. Spliterator?
@@ -40,7 +34,7 @@ fn decode(input: &PyBytes) -> PyResult<PyObject> {
         //  down. Add values to the Dict.
         for kvp in tags_str_iter {
             if !kvp.is_empty() {
-                let (key, val) = split_at_first(kvp, '=');
+                let (key, val) = split_at_first(kvp, "=");
                 if !key.is_empty() {
                     tags_dict.set_item(key, val)?;
                 }
@@ -51,20 +45,39 @@ fn decode(input: &PyBytes) -> PyResult<PyObject> {
         message = raw_str;
     }
 
-    let prefix: &str;
-    let command: &str;
-    let trail: &str;
-
     // Now, parse the message itself.
     // This format is specified in Section 2.3.1 of RFC 1459.
+    let prefix: &str;
     if message.starts_with(':') {
-        // This Message has a Prefix. The Prefix is most likely hostname and/or server info.
-        let (a, b) = split_at_first(message, ':');
+        // This Message has a Prefix. The Prefix is most likely hostname and/or server info. It ends
+        //  at the first space.
+        let (a, b) = split_at_first(&message[1..], " ");
         prefix = a;
         message = b;
+    } else {
+        // There is no Prefix.
+        prefix = "";
     }
 
-    Ok(tags_dict.into())
+    // The trailing data is found after a space and a colon. Everything up to that point is the IRC
+    //  Command and any Arguments passed to it.
+    let (cmd_and_args, trail) = split_at_first(message, " :");
+
+    // The Command is the first word before any Arguments.
+    let (command, args_str) = split_at_first(cmd_and_args, " ");
+
+    // The Arguments should be split apart into a List.
+    let arguments = args_str.split_ascii_whitespace();
+
+    // Compile everything into a Tuple, and send it back up to Python.
+    let output = (
+        prefix,
+        command,
+        arguments.collect(),
+        trail,
+        tags_dict.into(),
+    );
+    Ok(output)
 }
 
 /// A module for manipulation of IRCv3 data.
