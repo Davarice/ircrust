@@ -10,7 +10,6 @@ use std::str;
 fn decode(input: &PyBytes) -> PyResult<PyObject> {
     // First, decode the data into something we can work.
     let raw_str: &str = str::from_utf8(input.as_bytes())?;
-//    let mut _line: String = String::from_utf8(input.as_bytes().to_vec())?;
 
     // Then, initialize the Dict.
     let gil: GILGuard = Python::acquire_gil();
@@ -20,11 +19,11 @@ fn decode(input: &PyBytes) -> PyResult<PyObject> {
     let mut msg_str: &str;
 
     // Third, break the line down.
-    if raw_str.starts_with("@") {
+    if raw_str.starts_with('@') {
         // The Tags String is the first half of the original message received by IRC. The "regular"
         //  message begins after the first space.
         // Find the first space.
-        let idx = raw_str.find(" ");
+        let idx = raw_str.find(' ');
         if idx == None {
             // There is no space. The entire line after "@" is nothing but tags. Weird but okay.
             tag_str = &raw_str[1..];
@@ -34,18 +33,18 @@ fn decode(input: &PyBytes) -> PyResult<PyObject> {
             msg_str = &raw_str[idx.unwrap() + 1..];
         }
         // Break the tagstr into a Vector.
-        let tags_str_vec: Vec<&str> = tag_str.split(";").collect();
+        let tags_str_vec: Vec<&str> = tag_str.split(';').collect();
 
         // Loop through the vector of pair strings, and break each one the rest of the way down. Add
         //  values to the Dict.
         for &kvp in tags_str_vec.iter() {
-            let mut key: &str = "";
-            let mut val: &str = "";
-            if kvp.contains("=") {
+            let mut key: &str;
+            let mut val: &str;
+            if kvp.contains('=') {
                 // If the key has an `=`, the text to the right is the value.
-                let idx = kvp.find("=");
-                let after: Vec<&str> = kvp.splitn(1, "=").collect();
-                val = after[0];
+                let idx = kvp.find('=').unwrap();
+                key = &kvp[..idx];
+                val = &kvp[idx + 1..];
             } else {
                 // Otherwise, the value is to be interpreted as empty.
                 key = kvp;
