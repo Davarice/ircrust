@@ -93,7 +93,7 @@ fn decode(input: &PyBytes) -> PyResult<(&str, &str, Vec<&str>, &str, PyObject)> 
 
 /// A module for manipulation of IRCv3 data.
 #[pymodule]
-fn ircsplit(_py: Python, m: &PyModule) -> PyResult<()> {
+fn ircrust(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(decode))?;
 
     Ok(())
